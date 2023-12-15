@@ -26,7 +26,6 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService = null;
 
-
     /**
      * 登录请求处理
      * TODO 后续改进将业务处理的代码放入业务层，这里只做数据请求与返回
@@ -99,7 +98,7 @@ public class EmployeeController {
         queryWrapper.like(StringUtils.isNotEmpty(name), Employee::getName, name).or()
                 .like(StringUtils.isNotEmpty(name), Employee::getUsername, name);
         // 添加排序
-        queryWrapper.orderByDesc(Employee::getUpdateTime);
+        queryWrapper.orderByAsc(Employee::getCreateTime);
         // 执行查询
         employeeService.page(pageInfo, queryWrapper);
         return R.success(pageInfo);
