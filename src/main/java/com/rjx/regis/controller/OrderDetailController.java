@@ -14,6 +14,4 @@ public class OrderDetailController {
     @Autowired
     private OrdersService ordersService;
 
-
-
 }

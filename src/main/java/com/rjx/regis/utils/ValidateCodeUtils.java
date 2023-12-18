@@ -29,9 +29,6 @@ public class ValidateCodeUtils {
 
     /**
      * 随机生成指定长度字符串验证码
-     *
-     * @param length 长度
-     * @return
      */
     public static String generateValidateCode4String(int length) {
         Random rdm = new Random();

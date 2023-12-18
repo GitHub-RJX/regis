@@ -1,10 +1,5 @@
 package com.rjx.regis.controller;
 
-/**
- * @author jektong
- * @date 2022年05月25日 20:46
- */
-
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.rjx.regis.common.BaseContext;

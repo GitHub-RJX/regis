@@ -10,6 +10,7 @@ import com.rjx.regis.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +35,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     /**
      * 移动端发送短信
      */
@@ -46,15 +51,16 @@ public class UserController {
         if (!matcher.matches()) {
             return R.error("手机号格式有误");
         }
-
         if (StringUtils.isNotEmpty(phone)) {
             // 生成验证码
             String code = ValidateCodeUtils.generateValidateCode4String(4);
-            log.info("瑞吉外卖验证码：code为：" + code);
+            log.info("regis外卖验证码：code为：" + code);
             // 调用阿里云短信服务API完成发送短信
-            // SMSUtils.sendMessage("瑞吉外卖","",phone,validateCode4String);
-            // 将生成的验证码保存
-            session.setAttribute(phone, code);
+            // SMSUtils.sendMessage("regis外卖","",phone,validateCode4String);
+            // 将生成的验证码保存至session
+//            session.setAttribute(phone, code);
+            // 将生成的验证码保存至redis
+            redisTemplate.opsForValue().set(phone, code, 5, TimeUnit.MINUTES);
             return R.success(code);
         }
         return R.error("短信发送失败");
@@ -72,9 +78,11 @@ public class UserController {
         // 获取验证码
         String code = (String) map.get("code");
         // session中获取验证码
-        Object codeSession = session.getAttribute(phone);
+//        Object codeSession = session.getAttribute(phone);
+        // redis中获取验证码
+        Object codeRedis = redisTemplate.opsForValue().get(phone);
         // 比对验证码
-        if (codeSession != null && codeSession.equals(code)) {
+        if (codeRedis != null && codeRedis.equals(code)) {
             // 成功，则登录
             // 判断当前用户是否为新用户，新用户自动完成注册
             LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
@@ -88,6 +96,7 @@ public class UserController {
                 userService.save(user);
             }
             session.setAttribute("user", user.getId());
+            redisTemplate.delete(phone);
             return R.success(user);
         }
         return R.error("登录失败,验证码有误");

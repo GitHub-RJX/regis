@@ -17,9 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,8 +39,10 @@ public class DishController {
     private DishFlavorService flavorService;
 
     @Autowired
-    SetmealDishService setmealDishService;
+    private SetmealDishService setmealDishService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 新增菜品，同时插入菜品对应的口味数据
@@ -47,6 +51,9 @@ public class DishController {
     public R<String> save(@RequestBody DishDto dishDto) {
         log.info("DishDTO===>{}", dishDto);
         dishService.saveWithFlover(dishDto);
+        // 删除redis中的缓存数据
+        String key = "dish_" + dishDto.getCategoryId() + "_" + dishDto.getStatus();
+        redisTemplate.delete(key);
         return R.success("菜品添加成功");
     }
 
@@ -54,11 +61,11 @@ public class DishController {
     public R<Page> page(int page, int pageSize, String name) {
         log.info("page={},pageSize={},name={}", page, pageSize, name);
         // 构造分页构造器
-        Page<Dish> pageInfo = new Page(page, pageSize);
+        Page<Dish> pageInfo = new Page<>(page, pageSize);
         // 因为前端需要展示分类的名称，所以封装成DishDto对象
-        Page<DishDto> dishDtoPage = new Page(page, pageSize);
+        Page<DishDto> dishDtoPage = new Page<>(page, pageSize);
         // 构造条件
-        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper();
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(StringUtils.isNotEmpty(name), Dish::getName, name);
         // 添加排序
         queryWrapper.orderByDesc(Dish::getUpdateTime);
@@ -106,20 +113,26 @@ public class DishController {
     public R<String> update(@RequestBody DishDto dishDto) {
         log.info("DishDTO===>{}", dishDto);
         dishService.updateWithFlavor(dishDto);
+        // 删除redis中的缓存数据
+        String key = "dish_" + dishDto.getCategoryId() + "_" + dishDto.getStatus();
+        redisTemplate.delete(key);
         return R.success("菜品修改成功");
     }
 
     @GetMapping("/list")
     public R<List<DishDto>> list(Dish dish) {
+        List<DishDto> dishDtoList;
+        String key = "dish_" + dish.getCategoryId() + "_" + dish.getStatus();
+        dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+        if (dishDtoList != null) return R.success(dishDtoList);
         // 构造条件
-        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper();
+        LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Dish::getStatus, CommonsConst.DISH_OPEN);
         queryWrapper.eq(dish.getCategoryId() != null, Dish::getCategoryId, dish.getCategoryId());
         // 添加排序条件
         queryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> dishList = dishService.list(queryWrapper);
-
-        List<DishDto> dishDtoList = dishList.stream().map((item) -> {
+        dishDtoList = dishList.stream().map((item) -> {
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(item, dishDto);
             // 获取categoryId
@@ -137,6 +150,7 @@ public class DishController {
             dishDto.setFlavors(dishFlavorList);
             return dishDto;
         }).collect(Collectors.toList());
+        redisTemplate.opsForValue().set(key, dishDtoList, 60, TimeUnit.MINUTES);
         return R.success(dishDtoList);
     }
 
@@ -158,28 +172,24 @@ public class DishController {
 
     /**
      * 菜品的删除
-
-     */
-    /**
-     * 根据ID删除套餐信息，同时删除所关联的菜品
-     *
-     * @param ids
-     * @return
      */
     @DeleteMapping
     public R<String> delete(@RequestParam List<Long> ids) {
         log.info("ids==>{}" + ids);
         dishService.removeWithDish(ids);
+        for (Long id : ids) {
+            Dish dish = dishService.getById(id);
+            String key = "dish_" + dish.getCategoryId() + "_" + dish.getStatus();
+            redisTemplate.delete(key);
+        }
         return R.success("菜品删除成功");
     }
-
 
     /**
      * 移动端点击套餐图片查看套餐具体内容
      * 这里返回的是dto 对象，因为前端需要copies这个属性
      * 前端主要要展示的信息是:套餐中菜品的基本信息，图片，菜品描述，以及菜品的份数
      */
-    //这里前端是使用路径来传值的，要注意，不然你前端的请求都接收不到，就有点尴尬哈
     @GetMapping("/dish/{id}")
     public R<List<DishDto>> dish(@PathVariable("id") Long SetmealId) {
         LambdaQueryWrapper<SetmealDish> queryWrapper = new LambdaQueryWrapper<>();

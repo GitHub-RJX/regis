@@ -14,9 +14,7 @@ import java.util.List;
 @Configuration
 public class WebMvcConfig extends WebMvcConfigurationSupport {
 
-
     /**
-     * TODO：或者在资源路径下创建static然后进行yml配置也可
      * 静态资源映射
      */
     @Override
@@ -26,7 +24,6 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
         registry.addResourceHandler("/backend/**").addResourceLocations("classpath:/backend/");
         registry.addResourceHandler("/front/**").addResourceLocations("classpath:/front/");
     }
-
 
     /**
      * 扩展MVC消息转换器

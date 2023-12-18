@@ -1,6 +1,5 @@
 package com.rjx.regis.controller;
 
-
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rjx.regis.common.CommonsConst;
@@ -14,6 +13,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 /**
  * 员工控制类
@@ -28,7 +28,6 @@ public class EmployeeController {
 
     /**
      * 登录请求处理
-     * TODO 后续改进将业务处理的代码放入业务层，这里只做数据请求与返回
      */
     @PostMapping("/login")
     public R<Employee> login(HttpServletRequest request,
@@ -37,7 +36,7 @@ public class EmployeeController {
         String password = employee.getPassword();
         password = DigestUtils.md5DigestAsHex(password.getBytes());
         // 根据用户名查数据库
-        LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<Employee>();
+        LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Employee::getUsername, employee.getUsername());
         Employee emp = employeeService.getOne(queryWrapper);
         // 查不到返回登录失败结果
@@ -49,7 +48,7 @@ public class EmployeeController {
             return R.error(CommonsConst.LOGIN_FAIL);
         }
         // 查看员工状态
-        if (emp.getStatus() == CommonsConst.EMPLOYEE_STATUS_NO) {
+        if (emp.getStatus().equals(CommonsConst.EMPLOYEE_STATUS_NO)) {
             return R.error(CommonsConst.LOGIN_ACCOUNT_STOP);
         }
         // 登录成功将员工的ID放入session中
@@ -73,13 +72,13 @@ public class EmployeeController {
         // 设置默认密码为123456 并进行MD5加密
         employee.setPassword(DigestUtils.md5DigestAsHex(CommonsConst.INIT_PASSWORD.getBytes()));
         // 设置创建时间
-        //employee.setCreateTime(LocalDateTime.now());
+//        employee.setCreateTime(LocalDateTime.now());
         // 设置更新时间
-        //employee.setUpdateTime(LocalDateTime.now());
+//        employee.setUpdateTime(LocalDateTime.now());
         // 用户ID设置（session中取得）
-        //Long empId = (Long) request.getSession().getAttribute("employee");
-        //employee.setCreateUser(empId);
-        //employee.setUpdateUser(empId);
+        Long empId = (Long) request.getSession().getAttribute("employee");
+        employee.setCreateUser(empId);
+        employee.setUpdateUser(empId);
         // 调用存储方法
         employeeService.save(employee);
         return R.success("添加成功");
@@ -94,7 +93,7 @@ public class EmployeeController {
         // 构造分页构造器
         Page pageInfo = new Page(page, pageSize);
         // 构造条件
-        LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper();
+        LambdaQueryWrapper<Employee> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(StringUtils.isNotEmpty(name), Employee::getName, name).or()
                 .like(StringUtils.isNotEmpty(name), Employee::getUsername, name);
         // 添加排序
@@ -109,12 +108,11 @@ public class EmployeeController {
      */
     @PutMapping
     public R<String> update(HttpServletRequest request, @RequestBody Employee employee) {
-        long id = Thread.currentThread().getId();
-        log.info("线程ID为：{}", id);
+        log.info("根据用户ID去修改用户状态");
         // 获取员工ID
-        // Long empId = (Long) request.getSession().getAttribute("employee");
-        //employee.setUpdateTime(LocalDateTime.now());
-        //employee.setUpdateUser(empId);
+        Long empId = (Long) request.getSession().getAttribute("employee");
+//        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(empId);
         employeeService.updateById(employee);
         return R.success("员工信息修改成功");
     }

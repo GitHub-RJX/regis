@@ -23,14 +23,11 @@ import java.util.UUID;
 @Slf4j
 public class CommonController {
 
-    @Value("${reggie.path}")
+    @Value("${regis.path}")
     private String basePath;
 
     /**
      * 文件上传
-     *
-     * @param file
-     * @return R
      */
     @PostMapping("/upload")
     public R<String> upload(MultipartFile file) {
@@ -56,12 +53,8 @@ public class CommonController {
         return R.success(fileName);
     }
 
-
     /**
      * 文件下载
-     *
-     * @param name     文件名
-     * @param response 文件数据
      */
     @GetMapping("/download")
     public void downLoad(String name, HttpServletResponse response) {
