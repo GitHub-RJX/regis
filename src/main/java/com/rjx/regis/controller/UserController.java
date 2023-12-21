@@ -6,6 +6,7 @@ import com.rjx.regis.common.CommonsConst;
 import com.rjx.regis.common.R;
 import com.rjx.regis.entity.User;
 import com.rjx.regis.service.UserService;
+import com.rjx.regis.utils.SMSUtils;
 import com.rjx.regis.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -56,7 +57,7 @@ public class UserController {
             String code = ValidateCodeUtils.generateValidateCode4String(4);
             log.info("regis外卖验证码：code为：" + code);
             // 调用阿里云短信服务API完成发送短信
-            // SMSUtils.sendMessage("regis外卖","",phone,validateCode4String);
+//            SMSUtils.sendMessage("regis外卖", "", phone, code);
             // 将生成的验证码保存至session
 //            session.setAttribute(phone, code);
             // 将生成的验证码保存至redis
