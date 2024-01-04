@@ -34,7 +34,7 @@ public class CommonController {
         log.info(file.toString());
         // 原始文件名
         String originalFilename = file.getOriginalFilename();
-        // 截取出文件
+        // 截取出文件名后缀
         String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
         // 使用UUID重新生成文件名防止文件覆盖
         String fileName = UUID.randomUUID().toString() + suffix;

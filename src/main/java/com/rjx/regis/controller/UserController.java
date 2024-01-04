@@ -6,7 +6,6 @@ import com.rjx.regis.common.CommonsConst;
 import com.rjx.regis.common.R;
 import com.rjx.regis.entity.User;
 import com.rjx.regis.service.UserService;
-import com.rjx.regis.utils.SMSUtils;
 import com.rjx.regis.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -56,12 +55,15 @@ public class UserController {
             // 生成验证码
             String code = ValidateCodeUtils.generateValidateCode4String(4);
             log.info("regis外卖验证码：code为：" + code);
+
             // 调用阿里云短信服务API完成发送短信
 //            SMSUtils.sendMessage("regis外卖", "", phone, code);
+
             // 将生成的验证码保存至session
 //            session.setAttribute(phone, code);
             // 将生成的验证码保存至redis
             redisTemplate.opsForValue().set(phone, code, 5, TimeUnit.MINUTES);
+
             return R.success(code);
         }
         return R.error("短信发送失败");
@@ -72,7 +74,7 @@ public class UserController {
      */
     @PostMapping("/login")
     @Transactional
-    public R<User> login(@RequestBody Map map, HttpSession session) {
+    public R<User> login(@RequestBody Map map, HttpServletRequest request) {
         log.info(map.toString());
         // 获取手机号
         String phone = (String) map.get("phone");
@@ -96,7 +98,7 @@ public class UserController {
                 user.setStatus(CommonsConst.EMPLOYEE_STATUS_YES);
                 userService.save(user);
             }
-            session.setAttribute("user", user.getId());
+            request.getSession().setAttribute("user", user.getId());
             redisTemplate.delete(phone);
             return R.success(user);
         }
