@@ -8,6 +8,7 @@ import com.rjx.regis.dto.OrdersDto;
 import com.rjx.regis.entity.OrderDetail;
 import com.rjx.regis.entity.Orders;
 import com.rjx.regis.entity.ShoppingCart;
+import com.rjx.regis.service.OrderDetailService;
 import com.rjx.regis.service.OrdersService;
 import com.rjx.regis.service.ShoppingCartService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ public class OrdersController {
     private OrdersService ordersService;
 
     @Autowired
-    private com.rjx.regis.service.OrderDetailService OrderDetailService;
+    private OrderDetailService orderDetailService;
 
     @Autowired
     private ShoppingCartService shoppingCartService;
@@ -107,7 +108,7 @@ public class OrdersController {
     public List<OrderDetail> getOrderDetailListByOrderId(Long orderId) {
         LambdaQueryWrapper<OrderDetail> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(OrderDetail::getOrderId, orderId);
-        List<OrderDetail> orderDetailList = OrderDetailService.list(queryWrapper);
+        List<OrderDetail> orderDetailList = orderDetailService.list(queryWrapper);
         return orderDetailList;
     }
 
@@ -172,7 +173,7 @@ public class OrdersController {
         LambdaQueryWrapper<OrderDetail> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(OrderDetail::getOrderId, id);
         //获取该订单对应的所有的订单明细表
-        List<OrderDetail> orderDetailList = OrderDetailService.list(queryWrapper);
+        List<OrderDetail> orderDetailList = orderDetailService.list(queryWrapper);
 
         //通过用户id把原来的购物车给清空，这里的clean方法是视频中讲过的,建议抽取到service中,那么这里就可以直接调用了
         LambdaQueryWrapper<ShoppingCart> queryWrapper1 = new LambdaQueryWrapper<>();

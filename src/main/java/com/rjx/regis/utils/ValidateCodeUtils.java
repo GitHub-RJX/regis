@@ -31,9 +31,8 @@ public class ValidateCodeUtils {
      * 随机生成指定长度字符串验证码
      */
     public static String generateValidateCode4String(int length) {
-        Random rdm = new Random();
-        String hash1 = Integer.toHexString(rdm.nextInt());
-        String capstr = hash1.substring(0, length);
-        return capstr;
+        String hexString = Integer.toHexString(new Random().nextInt());
+        String code = hexString.substring(0, length);
+        return code;
     }
 }
